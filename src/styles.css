@@ -188,11 +188,11 @@ h2 { font-size: 17px; letter-spacing: -.45px; font-weight: 800; margin: 0; }
 .insight-clickable:focus-visible { outline: 2px solid #7e67da; outline-offset: 3px; }
 button.insight-summary { width: 100%; text-align: left; color: inherit; cursor: pointer; }
 .insight-summary .insight-decoration { pointer-events: none; }
-button.insight-bar-item { display: block; width: 100%; border: 1px solid transparent; border-radius: 8px; background: transparent; text-align: left; padding: 8px; margin: -8px; box-sizing: content-box; }
+button.insight-bar-item { display: block; width: calc(100% + 16px); border: 1px solid transparent; border-radius: 8px; background: transparent; text-align: left; padding: 8px; margin: -8px; box-sizing: border-box; }
 button.insight-bar-item:hover, button.progress-row:hover { background: #faf8ff; }
-.insight-bar-title, .insight-bar-track, .progress-track { display: block; }
+.insight-bar-track, .progress-track { display: block; }
 .insight-bar-track .bar-fill { display: block; }
-button.progress-row { width: 100%; border: 1px solid transparent; border-radius: 8px; background: transparent; font-family: inherit; text-align: left; padding: 8px; margin: -8px; box-sizing: content-box; cursor: pointer; }
+button.progress-row { width: calc(100% + 16px); border: 1px solid transparent; border-radius: 8px; background: transparent; font-family: inherit; text-align: left; padding: 8px; margin: -8px; box-sizing: border-box; cursor: pointer; }
 .insight-bottom { border-radius: 14px; background: #eeeaff; border: 1px solid #e4dcff; padding: 28px; display: flex; gap: 20px; align-items: center; justify-content: space-between; margin-top: 20px; }.eyebrow.small { font-size: 9px; }.insight-bottom h2 { margin: 10px 0; }.insight-bottom p { color: #988db1; font-size: 11px; max-width: 520px; line-height: 1.7; margin: 0; }.insight-info { margin-top: 20px; color: #a8a4b7; font-size: 11px; display: flex; gap: 8px; align-items: center; }
 .sidebar-backdrop { display: none; }
 @media (max-width: 1220px) { .sidebar { width: 218px; padding-left: 15px; padding-right: 15px; }.page { padding-left: 27px; padding-right: 27px; }.topbar { padding: 0 27px; }.content-grid { grid-template-columns: minmax(0,1fr) 260px; gap: 15px; }.metrics-grid { gap: 10px; }.metric-card { padding: 17px 14px; }.feedback-item { grid-template-columns: 32px minmax(0,1fr); }.feedback-actions { grid-column: 2; flex-direction: row; align-items: center; margin-top: 1px; }.feedback-category-icon { width: 32px; height: 32px; } }
