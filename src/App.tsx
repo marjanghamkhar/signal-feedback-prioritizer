@@ -224,8 +224,8 @@ function App() {
                   </div>
                   <div className="tools-row">
                     <label className="search-wrap"><Search size={17}/><input aria-label="Search feedback" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search feedback..." /></label>
-                    <label className="category-wrap"><Filter size={15}/><select aria-label="Filter category" value={categoryFilter} onChange={e => setCategoryFilter(e.target.value as Category | 'All categories')}><option>All categories</option><option>Bug</option><option>Feature request</option><option>Improvement</option></select><ChevronDown size={14}/></label>
-                    <label className="sort-wrap"><ArrowDownUp size={15}/><select aria-label="Sort feedback" value={sortMode} onChange={e => setSortMode(e.target.value as SortMode)}><option>Newest first</option><option>Most voted</option><option>Highest priority</option></select><ChevronDown size={14}/></label>
+                    <ToolbarDropdown label="Filter category" value={categoryFilter} icon={<Filter size={15}/>} options={['All categories', 'Bug', 'Feature request', 'Improvement']} onChange={value => setCategoryFilter(value as Category | 'All categories')} />
+                    <ToolbarDropdown label="Sort feedback" value={sortMode} icon={<ArrowDownUp size={15}/>} options={['Newest first', 'Most voted', 'Highest priority']} onChange={value => setSortMode(value as SortMode)} />
                   </div>
                 </div>
 
@@ -255,6 +255,61 @@ function App() {
       </div>
       {showModal && <AddFeedbackModal onClose={() => setShowModal(false)} onAdd={addFeedback}/>}
       {toast && <div className="toast" role="status"><Check size={16}/>{toast}</div>}
+    </div>
+  )
+}
+
+function ToolbarDropdown({ label, value, icon, options, onChange }: {
+  label: string
+  value: string
+  icon: React.ReactNode
+  options: readonly string[]
+  onChange: (value: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+
+  return (
+    <div
+      className="toolbar-dropdown"
+      onBlur={event => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setOpen(false)
+      }}
+      onKeyDown={event => {
+        if (event.key === 'Escape') setOpen(false)
+      }}
+    >
+      <button
+        type="button"
+        className="toolbar-dropdown-trigger"
+        aria-label={`${label}: ${value}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        onClick={() => setOpen(current => !current)}
+      >
+        {icon}
+        <span className="toolbar-dropdown-value">{value}</span>
+        <ChevronDown size={14} className={open ? 'dropdown-chevron-up' : ''}/>
+      </button>
+      {open && (
+        <div className="toolbar-dropdown-menu" role="menu" aria-label={label}>
+          {options.map(option => (
+            <button
+              key={option}
+              type="button"
+              role="menuitemradio"
+              aria-checked={option === value}
+              className={option === value ? 'chosen' : ''}
+              onClick={() => {
+                onChange(option)
+                setOpen(false)
+              }}
+            >
+              {option === value ? <Check size={14} /> : <span className="toolbar-dropdown-check-spacer" />}
+              {option}
+            </button>
+          ))}
+        </div>
+      )}
     </div>
   )
 }
