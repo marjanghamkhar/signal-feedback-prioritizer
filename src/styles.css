@@ -114,13 +114,20 @@ h2 { font-size: 17px; letter-spacing: -.45px; font-weight: 800; margin: 0; }
 .category-tag { font-size: 9px; font-weight: 700; padding: 4px 8px; border-radius: 5px; }
 .meta-dot { color: #cbc8d1; }
 .feedback-actions { display: flex; flex-direction: column; align-items: flex-end; gap: 12px; }
-.status-select { display: flex; align-items: center; gap: 5px; background: #f5f5f8; border-radius: 6px; padding: 5px 7px; color: #85869c; white-space: nowrap; }
-.status-select select { background: transparent; appearance: none; border: none; color: inherit; font-size: 9px; font-weight: 800; outline: none; cursor: pointer; }
-.status-dot { border-radius: 50%; width: 6px; height: 6px; background: #a9a8ba; }
-.status-in-progress { background: #f0efff; color: #8a73d1; }.status-in-progress .status-dot { background: #8c7ddd; }
-.status-done { background: #e9f7ef; color: #70b291; }.status-done .status-dot { background: #7dbe99; }
-.vote-button { border: 1px solid #ebecf3; background: #fff; color: #8a899a; border-radius: 7px; font-size: 10px; display: flex; align-items: center; gap: 7px; padding: 6px 9px; font-weight: 800; }
-.vote-button:hover:not(:disabled), .vote-button.voted { color: #795bd6; background: #f7f3ff; border-color: #e7dfff; }
+.status-control { position: relative; }
+.status-select { width: 100%; display: flex; align-items: center; gap: 5px; background: #f5f5f8; border: 0; border-radius: 6px; padding: 6px 8px; color: #85869c; font-size: 9px; font-weight: 800; white-space: nowrap; cursor: pointer; }
+.status-select svg, .vote-button svg { pointer-events: none; }
+.status-select:focus-visible, .vote-button:focus-visible { outline: 2px solid #795bd6; outline-offset: 2px; }
+.status-select:hover { filter: brightness(.97); }
+.status-dot { display: inline-block; flex: 0 0 6px; border-radius: 50%; width: 6px; height: 6px; background: #a9a8ba; }
+.status-in-progress { background: #f0efff; color: #8a73d1; }.status-in-progress .status-dot, .dot-in-progress { background: #8c7ddd; }
+.status-done { background: #e9f7ef; color: #70b291; }.status-done .status-dot, .dot-done { background: #7dbe99; }
+.status-menu { position: absolute; top: calc(100% + 5px); right: 0; z-index: 40; width: 143px; padding: 5px; border: 1px solid #eae7f3; border-radius: 8px; background: #fff; box-shadow: 0 12px 30px rgba(50,42,88,.15); }
+.status-menu button { display: flex; width: 100%; align-items: center; gap: 8px; padding: 10px 9px; border: 0; border-radius: 5px; background: transparent; color: #67667b; font-size: 10px; font-weight: 700; text-align: left; cursor: pointer; }
+.status-menu button:hover, .status-menu button:focus-visible, .status-menu button.chosen { background: #f4f0ff; color: #7257d6; }
+.status-menu button > svg { margin-left: auto; }
+.vote-button { border: 1px solid #ebecf3; background: #fff; color: #8a899a; border-radius: 7px; font-size: 10px; display: flex; align-items: center; gap: 7px; padding: 6px 9px; font-weight: 800; cursor: pointer; }
+.vote-button:hover, .vote-button.voted { color: #795bd6; background: #f7f3ff; border-color: #e7dfff; }
 .panel-footer { border-top: 1px solid #f0f0f5; display: flex; align-items: center; justify-content: space-between; padding: 17px 24px; color: #a6a3b4; font-size: 10px; }
 .panel-footer button { border: none; background: transparent; color: #8170ca; font-size: 10px; font-weight: 800; display: flex; align-items: center; gap: 6px; }
 .empty-state { text-align: center; padding: 55px 18px; color: #afa5ca; display: flex; flex-direction: column; align-items: center; gap: 10px; }
