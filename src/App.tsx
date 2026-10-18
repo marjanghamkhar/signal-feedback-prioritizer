@@ -13,6 +13,7 @@ type Status = 'New' | 'In progress' | 'Done'
 type View = 'Overview' | 'Insights'
 type FilterMode = 'All feedback' | 'High priority' | 'In progress'
 type SortMode = 'Newest first' | 'Most voted' | 'Highest priority'
+type InsightsNavigation = { mode?: FilterMode; sort?: SortMode; category?: Category; status?: Status; search?: string }
 
 type Feedback = {
   id: string
@@ -74,6 +75,7 @@ function App() {
   const [view, setView] = useState<View>('Overview')
   const [filterMode, setFilterMode] = useState<FilterMode>('All feedback')
   const [sortMode, setSortMode] = useState<SortMode>('Newest first')
+  const [statusFilter, setStatusFilter] = useState<Status | 'All statuses'>('All statuses')
   const [categoryFilter, setCategoryFilter] = useState<Category | 'All categories'>('All categories')
   const [query, setQuery] = useState('')
   const [showModal, setShowModal] = useState(false)
@@ -140,6 +142,7 @@ function App() {
     return feedback.filter(item => {
       if (filterMode === 'High priority' && (item.priority !== 'High' || item.status === 'Done')) return false
       if (filterMode === 'In progress' && item.status !== 'In progress') return false
+      if (statusFilter !== 'All statuses' && item.status !== statusFilter) return false
       if (categoryFilter !== 'All categories' && item.category !== categoryFilter) return false
       if (search && !`${item.title} ${item.description} ${item.customer}`.toLowerCase().includes(search)) return false
       return true
@@ -148,7 +151,7 @@ function App() {
       if (sortMode === 'Most voted') return (b.votes - a.votes) || (priorityOrder[b.priority] - priorityOrder[a.priority])
       return (priorityOrder[b.priority] - priorityOrder[a.priority]) || (b.votes - a.votes)
     })
-  }, [feedback, filterMode, categoryFilter, query, sortMode])
+  }, [feedback, filterMode, statusFilter, categoryFilter, query, sortMode])
 
   function updateStatus(id: string, status: Status) {
     setFeedback(items => items.map(item => item.id === id ? { ...item, status } : item))
@@ -172,6 +175,7 @@ function App() {
     setSortMode('Newest first')
     setShowModal(false)
     setFilterMode('All feedback')
+    setStatusFilter('All statuses')
     setCategoryFilter('All categories')
     setQuery('')
     setView('Overview')
@@ -184,6 +188,7 @@ function App() {
     setSortMode('Newest first')
     setVoted([])
     setFilterMode('All feedback')
+    setStatusFilter('All statuses')
     setCategoryFilter('All categories')
     setQuery('')
     setToast('Sample workspace restored')
@@ -192,6 +197,16 @@ function App() {
   function goTo(next: View) {
     setView(next)
     setShowMobileNav(false)
+  }
+
+  function openMatchingFeedback(options: InsightsNavigation = {}) {
+    setFilterMode(options.mode ?? 'All feedback')
+    setStatusFilter(options.status ?? 'All statuses')
+    setCategoryFilter(options.category ?? 'All categories')
+    setSortMode(options.sort ?? 'Newest first')
+    setQuery(options.search ?? '')
+    goTo('Overview')
+    window.setTimeout(() => document.getElementById('feedback-inbox')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 80)
   }
 
   return (
@@ -272,15 +287,19 @@ function App() {
                   <button className="button button-primary mobile-cta" onClick={() => setShowModal(true)}><Plus size={17}/> Add feedback</button>
                 </div>
 
-                <div className="inbox-toolbar">
+                <div className="inbox-toolbar" id="feedback-inbox">
                   <div className="segmented" role="group" aria-label="Filter feedback">
-                    {(['All feedback', 'High priority', 'In progress'] as FilterMode[]).map(mode => <button key={mode} className={filterMode === mode ? 'selected' : ''} onClick={() => setFilterMode(mode)}>{mode}</button>)}
+                    {(['All feedback', 'High priority', 'In progress'] as FilterMode[]).map(mode => <button key={mode} className={filterMode === mode ? 'selected' : ''} onClick={() => { setFilterMode(mode); setStatusFilter('All statuses') }}>{mode}</button>)}
                   </div>
                   <div className="tools-row">
                     <label className="search-wrap"><Search size={17}/><input aria-label="Search feedback" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search feedback..." /></label>
                     <ToolbarDropdown label="Filter category" value={categoryFilter} icon={<Filter size={15}/>} options={['All categories', 'Bug', 'Feature request', 'Improvement']} onChange={value => setCategoryFilter(value as Category | 'All categories')} />
                     <ToolbarDropdown label="Sort feedback" value={sortMode} icon={<ArrowDownUp size={15}/>} options={['Newest first', 'Most voted', 'Highest priority']} onChange={value => setSortMode(value as SortMode)} />
                   </div>
+                  {statusFilter !== 'All statuses' && <div className="active-insight-filter">
+                    Showing {statusFilter.toLowerCase()} feedback
+                    <button type="button" onClick={() => setStatusFilter('All statuses')} aria-label="Clear status filter"><X size={13}/> Clear</button>
+                  </div>}
                 </div>
 
                 <div className="feedback-list">
@@ -303,7 +322,7 @@ function App() {
                 <div className="tip-box"><CircleHelp size={19}/><p><strong>Design note</strong><br/>All feedback is fictional. Your edits are saved only in this browser.</p></div>
               </aside>
             </div>
-          </> : <InsightsView feedback={feedback} counts={counts} onBack={() => goTo('Overview')}/>}
+          </> : <InsightsView feedback={feedback} counts={counts} onNavigate={openMatchingFeedback}/>}
           <footer className="site-footer"><span>Signal / Product design concept</span><span>Crafted with curiosity and AI-assisted development ✦</span></footer>
         </main>
       </div>
@@ -414,13 +433,76 @@ function FeedbackCard({ item, voted, recentlyAdded, onVote, onStatusChange }: { 
   </article>
 }
 
-function InsightsView({ feedback, counts, onBack }: { feedback: Feedback[]; counts: { total: number; high: number; ongoing: number; completed: number; totalVotes: number; byCategory: { category: Category; count: number }[]; focus: Feedback | undefined }; onBack: () => void }) {
+function InsightsView({ feedback, counts, onNavigate }: {
+  feedback: Feedback[]
+  counts: {
+    total: number
+    high: number
+    ongoing: number
+    completed: number
+    totalVotes: number
+    byCategory: { category: Category; count: number }[]
+    focus: Feedback | undefined
+  }
+  onNavigate: (options?: InsightsNavigation) => void
+}) {
   const statuses: Status[] = ['New', 'In progress', 'Done']
-  return <div className="insights-page"><div className="eyebrow"><span className="eyebrow-icon"><BarChart3 size={13}/></span> A CLOSER LOOK</div><h1>Better decisions start<br/>with <em>patterns.</em></h1><p className="insights-lead">A simple view of the themes, activity, and priorities in your feedback.</p>
-    <div className="insight-cards"><div className="insight-summary"><span>Feedback collected</span><strong>{counts.total}</strong><small>Sample feedback entries</small><span className="insight-decoration"><ArrowUpRight size={52}/></span></div><div className="insight-summary"><span>Community votes</span><strong>{counts.totalVotes}</strong><small>Across all feedback</small><span className="insight-decoration"><ThumbsUp size={47}/></span></div><div className="insight-summary"><span>Open high-priority items</span><strong>{counts.high}</strong><small>Still need attention</small><span className="insight-decoration"><Zap size={47}/></span></div></div>
-    <div className="insight-columns"><section className="panel insight-panel"><div className="insights-panel-title"><h2>Feedback themes</h2><p>Distribution across product feedback categories</p></div><div className="insights-bars">{counts.byCategory.map(({ category, count }) => <div className="insight-bar-item" key={category}><div className="insight-bar-title"><span>{category}</span><strong>{count} {count === 1 ? 'item' : 'items'}</strong></div><div className="insight-bar-track"><div className={`bar-fill ${categoryColors[category]}`} style={{ width: `${counts.total ? 100 * count / counts.total : 0}%` }}/></div></div>)}</div></section>
-    <section className="panel insight-panel"><div className="insights-panel-title"><h2>Progress snapshot</h2><p>See what's new, active, and completed</p></div><div className="progress-list">{statuses.map(status => { const count = feedback.filter(item => item.status === status).length; return <div key={status} className="progress-row"><span className={`progress-dot dot-${status.toLowerCase().replace(' ', '-')}`}/><span>{status}</span><strong>{count}</strong><div className="progress-track"><span style={{ width: `${counts.total ? 100 * count / counts.total : 0}%` }}/></div></div> })}</div></section></div>
-    <div className="insight-bottom"><div><span className="eyebrow small">AN ACTIONABLE NEXT STEP</span><h2>{counts.focus?.title ?? 'No open issues to review'}</h2><p>Suggested by a transparent rule that weighs urgency and votes. Not generated by an AI model.</p></div><button className="button button-primary" onClick={onBack}>Back to feedback <ArrowRight size={17}/></button></div>
+
+  return <div className="insights-page">
+    <div className="eyebrow"><span className="eyebrow-icon"><BarChart3 size={13}/></span> A CLOSER LOOK</div>
+    <h1>Better decisions start<br/>with <em>patterns.</em></h1>
+    <p className="insights-lead">See what your feedback is telling you. Select a metric or a chart to explore its feedback.</p>
+
+    <div className="insight-cards">
+      <button type="button" className="insight-summary insight-clickable" onClick={() => onNavigate()} aria-label="View all feedback">
+        <span>Feedback collected</span><strong>{counts.total}</strong><small>View all feedback entries</small>
+        <span className="insight-decoration"><ArrowUpRight size={52}/></span>
+      </button>
+      <button type="button" className="insight-summary insight-clickable" onClick={() => onNavigate({ sort: 'Most voted' })} aria-label="View most voted feedback">
+        <span>Community votes</span><strong>{counts.totalVotes}</strong><small>See most voted feedback</small>
+        <span className="insight-decoration"><ThumbsUp size={47}/></span>
+      </button>
+      <button type="button" className="insight-summary insight-clickable" onClick={() => onNavigate({ mode: 'High priority', sort: 'Highest priority' })} aria-label="View open high-priority feedback">
+        <span>Open high-priority items</span><strong>{counts.high}</strong><small>Review high-priority feedback</small>
+        <span className="insight-decoration"><Zap size={47}/></span>
+      </button>
+    </div>
+
+    <div className="insight-columns">
+      <section className="panel insight-panel">
+        <div className="insights-panel-title"><h2>Feedback themes</h2><p>Select a category to view matching feedback</p></div>
+        <div className="insights-bars">
+          {counts.byCategory.map(({ category, count }) =>
+            <button type="button" className="insight-bar-item insight-clickable" key={category} onClick={() => onNavigate({ category })} aria-label={'View ' + category + ' feedback'}>
+              <span className="insight-bar-title"><span>{category}</span><strong>{count} {count === 1 ? 'item' : 'items'}</strong></span>
+              <span className="insight-bar-track"><span className={'bar-fill ' + categoryColors[category]} style={{ width: (counts.total ? 100 * count / counts.total : 0) + '%' }}/></span>
+            </button>
+          )}
+        </div>
+      </section>
+      <section className="panel insight-panel">
+        <div className="insights-panel-title"><h2>Progress snapshot</h2><p>Select a status to view matching feedback</p></div>
+        <div className="progress-list">
+          {statuses.map(status => {
+            const count = feedback.filter(item => item.status === status).length
+            return <button type="button" key={status} className="progress-row insight-clickable" onClick={() => onNavigate({ status })} aria-label={'View feedback marked ' + status}>
+              <span className={'progress-dot dot-' + status.toLowerCase().replace(' ', '-')}/>
+              <span>{status}</span><strong>{count}</strong>
+              <span className="progress-track"><span style={{ width: (counts.total ? 100 * count / counts.total : 0) + '%' }}/></span>
+            </button>
+          })}
+        </div>
+      </section>
+    </div>
+
+    <div className="insight-bottom">
+      <div><span className="eyebrow small">AN ACTIONABLE NEXT STEP</span><h2>{counts.focus?.title ?? 'No open issues to review'}</h2>
+        <p>Suggested by a transparent rule that weighs urgency and votes. Not generated by an AI model.</p>
+      </div>
+      <button type="button" className="button button-primary" onClick={() => onNavigate(counts.focus ? { search: counts.focus.title } : {})}>
+        {counts.focus ? 'Review this feedback' : 'Back to feedback'} <ArrowRight size={17}/>
+      </button>
+    </div>
     <div className="insight-info"><ArrowDownRight size={16}/> These numbers are calculated from the sample data and your edits. They are not real customer or product metrics.</div>
   </div>
 }
