@@ -3,6 +3,7 @@ import {
   Activity, ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, Check,
   CheckCircle2, ChevronDown, CircleHelp, Clock3, Filter, Inbox, LayoutDashboard,
   Lightbulb, Menu, MessageCircle, Plus, Search, Sparkles, ThumbsUp, TrendingUp,
+  ArrowDownUp,
   X, Zap,
 } from 'lucide-react'
 
@@ -11,6 +12,7 @@ type Priority = 'High' | 'Medium' | 'Low'
 type Status = 'New' | 'In progress' | 'Done'
 type View = 'Overview' | 'Insights'
 type FilterMode = 'All feedback' | 'High priority' | 'In progress'
+type SortMode = 'Newest first' | 'Most voted' | 'Highest priority'
 
 type Feedback = {
   id: string
@@ -59,12 +61,14 @@ function App() {
   const [feedback, setFeedback] = useState<Feedback[]>(readSavedFeedback)
   const [view, setView] = useState<View>('Overview')
   const [filterMode, setFilterMode] = useState<FilterMode>('All feedback')
+  const [sortMode, setSortMode] = useState<SortMode>('Newest first')
   const [categoryFilter, setCategoryFilter] = useState<Category | 'All categories'>('All categories')
   const [query, setQuery] = useState('')
   const [showModal, setShowModal] = useState(false)
   const [showMobileNav, setShowMobileNav] = useState(false)
   const [toast, setToast] = useState('')
   const [voted, setVoted] = useState<string[]>([])
+  const [recentlyAddedId, setRecentlyAddedId] = useState<string | null>(null)
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(feedback))
@@ -75,6 +79,12 @@ function App() {
     const timer = window.setTimeout(() => setToast(''), 3400)
     return () => window.clearTimeout(timer)
   }, [toast])
+
+  useEffect(() => {
+    if (!recentlyAddedId) return
+    const timer = window.setTimeout(() => setRecentlyAddedId(null), 5000)
+    return () => window.clearTimeout(timer)
+  }, [recentlyAddedId])
 
   const counts = useMemo(() => {
     const total = feedback.length
@@ -99,8 +109,12 @@ function App() {
       if (categoryFilter !== 'All categories' && item.category !== categoryFilter) return false
       if (search && !`${item.title} ${item.description} ${item.customer}`.toLowerCase().includes(search)) return false
       return true
-    }).sort((a, b) => (priorityOrder[b.priority] - priorityOrder[a.priority]) || (b.votes - a.votes))
-  }, [feedback, filterMode, categoryFilter, query])
+    }).sort((a, b) => {
+      if (sortMode === 'Newest first') return b.createdAt.localeCompare(a.createdAt)
+      if (sortMode === 'Most voted') return (b.votes - a.votes) || (priorityOrder[b.priority] - priorityOrder[a.priority])
+      return (priorityOrder[b.priority] - priorityOrder[a.priority]) || (b.votes - a.votes)
+    })
+  }, [feedback, filterMode, categoryFilter, query, sortMode])
 
   function updateStatus(id: string, status: Status) {
     setFeedback(items => items.map(item => item.id === id ? { ...item, status } : item))
@@ -116,7 +130,10 @@ function App() {
 
   function addFeedback(item: NewFeedback) {
     const today = new Date().toISOString().slice(0, 10)
-    setFeedback(items => [{ ...item, id: crypto.randomUUID(), status: 'New', votes: 0, createdAt: today }, ...items])
+    const id = crypto.randomUUID()
+    setFeedback(items => [{ ...item, id, status: 'New', votes: 0, createdAt: today }, ...items])
+    setRecentlyAddedId(id)
+    setSortMode('Newest first')
     setShowModal(false)
     setFilterMode('All feedback')
     setCategoryFilter('All categories')
@@ -127,6 +144,8 @@ function App() {
 
   function resetDemo() {
     setFeedback(starterFeedback)
+    setRecentlyAddedId(null)
+    setSortMode('Newest first')
     setVoted([])
     setFilterMode('All feedback')
     setCategoryFilter('All categories')
@@ -206,12 +225,13 @@ function App() {
                   <div className="tools-row">
                     <label className="search-wrap"><Search size={17}/><input aria-label="Search feedback" value={query} onChange={e => setQuery(e.target.value)} placeholder="Search feedback..." /></label>
                     <label className="category-wrap"><Filter size={15}/><select aria-label="Filter category" value={categoryFilter} onChange={e => setCategoryFilter(e.target.value as Category | 'All categories')}><option>All categories</option><option>Bug</option><option>Feature request</option><option>Improvement</option></select><ChevronDown size={14}/></label>
+                    <label className="sort-wrap"><ArrowDownUp size={15}/><select aria-label="Sort feedback" value={sortMode} onChange={e => setSortMode(e.target.value as SortMode)}><option>Newest first</option><option>Most voted</option><option>Highest priority</option></select><ChevronDown size={14}/></label>
                   </div>
                 </div>
 
                 <div className="feedback-list">
                   {filteredFeedback.length ? filteredFeedback.map(item => (
-                    <FeedbackCard key={item.id} item={item} voted={voted.includes(item.id)} onVote={() => addVote(item.id)} onStatusChange={status => updateStatus(item.id, status)}/>
+                    <FeedbackCard key={item.id} item={item} voted={voted.includes(item.id)} recentlyAdded={recentlyAddedId === item.id} onVote={() => addVote(item.id)} onStatusChange={status => updateStatus(item.id, status)}/>
                   )) : <div className="empty-state"><Search size={26}/><strong>Nothing matches that search</strong><p>Try a different category or clear your filters.</p><button onClick={() => { setQuery(''); setCategoryFilter('All categories'); setFilterMode('All feedback') }}>Clear filters</button></div>}
                 </div>
                 <div className="panel-footer"><span>Showing {filteredFeedback.length} of {feedback.length} feedback items</span><button onClick={resetDemo}>Reset sample data <ArrowRight size={14}/></button></div>
@@ -225,7 +245,7 @@ function App() {
                   </div>
                   <button className="text-link" onClick={() => goTo('Insights')}>Explore insights <ArrowRight size={16}/></button>
                 </section>
-                <section className="focus-card"><span className="focus-icon"><Lightbulb size={19}/></span><div className="focus-eyebrow">SUGGESTED FOCUS</div><h3>{counts.focus?.title ?? 'All caught up!'}</h3><p>{counts.focus ? `A ${counts.focus.priority.toLowerCase()}-priority item with ${counts.focus.votes} votes. A good place to start your review.` : 'There are no open feedback items right now.'}</p><span className="focus-disclaimer">Based on priority + votes, not AI</span><button onClick={() => { setFilterMode('High priority'); setCategoryFilter('All categories'); setQuery(''); window.scrollTo({ top: 460, behavior: 'smooth' }) }}>Review priorities <ArrowUpRight size={16}/></button></section>
+                <section className="focus-card"><span className="focus-icon"><Lightbulb size={19}/></span><div className="focus-eyebrow">SUGGESTED FOCUS</div><h3>{counts.focus?.title ?? 'All caught up!'}</h3><p>{counts.focus ? `A ${counts.focus.priority.toLowerCase()}-priority item with ${counts.focus.votes} votes. A good place to start your review.` : 'There are no open feedback items right now.'}</p><span className="focus-disclaimer">Based on priority + votes, not AI</span><button onClick={() => { setFilterMode('High priority'); setSortMode('Highest priority'); setCategoryFilter('All categories'); setQuery(''); window.scrollTo({ top: 460, behavior: 'smooth' }) }}>Review priorities <ArrowUpRight size={16}/></button></section>
                 <div className="tip-box"><CircleHelp size={19}/><p><strong>Design note</strong><br/>All feedback is fictional. Your edits are saved only in this browser.</p></div>
               </aside>
             </div>
@@ -243,10 +263,10 @@ function MetricCard({ icon, color, label, value, hint }: { icon: React.ReactNode
   return <div className="metric-card"><span className={`metric-icon ${color}`}>{icon}</span><span className="metric-label">{label}</span><strong className="metric-value">{value}</strong><span className="metric-hint">{hint}</span></div>
 }
 
-function FeedbackCard({ item, voted, onVote, onStatusChange }: { item: Feedback; voted: boolean; onVote: () => void; onStatusChange: (status: Status) => void }) {
-  return <article className="feedback-item">
+function FeedbackCard({ item, voted, recentlyAdded, onVote, onStatusChange }: { item: Feedback; voted: boolean; recentlyAdded: boolean; onVote: () => void; onStatusChange: (status: Status) => void }) {
+  return <article className={`feedback-item ${recentlyAdded ? 'just-added' : ''}`}>
     <div className={`feedback-category-icon ${categoryColors[item.category]}`}>{item.category === 'Bug' ? <Zap size={19}/> : item.category === 'Improvement' ? <Sparkles size={19}/> : <MessageCircle size={19}/>}</div>
-    <div className="feedback-body"><div className="feedback-heading"><h3>{item.title}</h3><span className={`priority-tag priority-${item.priority.toLowerCase()}`}>{item.priority} priority</span></div>
+    <div className="feedback-body"><div className="feedback-heading"><h3>{item.title}</h3>{recentlyAdded && <span className="recent-tag">Just added</span>}<span className={`priority-tag priority-${item.priority.toLowerCase()}`}>{item.priority} priority</span></div>
       <p>{item.description}</p><div className="feedback-meta"><span className={`category-tag ${categoryColors[item.category]}`}>{item.category}</span><span className="meta-dot">·</span><span>{item.customer}</span><span className="meta-dot">·</span><span>{labelForDate(item.createdAt)}</span></div></div>
     <div className="feedback-actions"><label className={`status-select status-${item.status.toLowerCase().replace(' ', '-')}`}><span className="status-dot"/><select aria-label={`Status for ${item.title}`} value={item.status} onChange={e => onStatusChange(e.target.value as Status)}><option>New</option><option>In progress</option><option>Done</option></select><ChevronDown size={12}/></label><button className={`vote-button ${voted ? 'voted' : ''}`} onClick={onVote} disabled={voted} aria-label={`Vote for ${item.title}`} title={voted ? 'You voted' : 'Vote for this feedback'}><ThumbsUp size={14}/>{item.votes}</button></div>
   </article>
