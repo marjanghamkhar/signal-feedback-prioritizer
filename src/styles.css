@@ -199,3 +199,96 @@ button.progress-row { width: calc(100% + 16px); border: 1px solid transparent; b
 @media (max-width: 930px) { .sidebar { width: 77px; padding-left: 12px; padding-right: 12px; }.brand { margin-left: 6px; margin-right: 0; justify-content: center; }.brand-word,.workspace-label,.nav-item span,.sidebar-note,.sidebar-profile>span:nth-child(2),.sidebar-profile>svg { display: none; }.primary-nav { align-items: center; }.nav-item { justify-content: center; width: 48px; }.sidebar-profile { justify-content: center; }.profile-menu { left: calc(100% + 10px); bottom: 0; }.content-grid { grid-template-columns: minmax(0,1fr) 255px; }.page { padding-left: 22px; padding-right: 22px; }.topbar { padding: 0 22px; } }
 @media (max-width: 750px) { .sidebar { width: 245px; position: fixed; top: 0; left: 0; transform: translateX(-100%); transition: transform 200ms; padding-left: 18px; padding-right: 18px; }.sidebar.sidebar-open { transform: translateX(0); }.sidebar-open .brand-word,.sidebar-open .workspace-label,.sidebar-open .nav-item span,.sidebar-open .sidebar-note,.sidebar-open .sidebar-profile>span:nth-child(2),.sidebar-open .sidebar-profile>svg { display: initial; }.sidebar-open .primary-nav { align-items: stretch; }.sidebar-open .nav-item { width: auto; justify-content: flex-start; }.sidebar-open .brand { justify-content: flex-start; }.sidebar-open .sidebar-note { display: block; }.sidebar-open .sidebar-profile { justify-content: flex-start; }.sidebar-open .profile-menu { left: 0; bottom: calc(100% + 10px); }.sidebar-backdrop { display: block; position: fixed; inset: 0; background: #17162688; border: 0; z-index: 19; }.mobile-menu { display: inline-flex; margin-left: -5px; }.topbar { height: 62px; }.page { padding-top: 29px; }.metrics-grid { grid-template-columns: repeat(2, minmax(0,1fr)); }.content-grid { grid-template-columns: 1fr; }.right-rail { display: grid; grid-template-columns: 1fr 1fr; align-items: start; }.tip-box { grid-column: 1 / -1; }.insight-columns { grid-template-columns: 1fr; } }
 @media (max-width: 500px) { .topbar-right .demo-indicator { display: none; }.page { padding: 23px 15px 15px; }.topbar { padding: 0 15px; }.page-intro { margin-bottom: 24px; }.page-intro h1,.insights-page h1 { letter-spacing: -1.3px; }.page-intro p { font-size: 12px; }.desktop-cta { display: none; }.mobile-cta { display: inline-flex; padding: 7px 9px; font-size: 10px; min-height: 34px; }.section-heading { padding: 18px 15px 14px; }.section-heading p { font-size: 10px; }.metrics-grid { gap: 9px; }.metric-card { padding: 15px; }.metric-value { font-size: 26px; }.metric-hint { font-size: 9px; }.inbox-toolbar { padding: 0 15px 13px; }.segmented { gap: 16px; }.segmented button { font-size: 10px; }.tools-row { flex-direction: column; }.toolbar-dropdown { flex: none; width: 100%; }.toolbar-dropdown-menu { min-width: 0; }.feedback-item { padding: 17px 15px; gap: 9px; }.feedback-heading h3 { font-size: 11px; }.feedback-body p { font-size: 10px; }.feedback-meta { font-size: 9px; }.feedback-actions { gap: 9px; }.panel-footer { padding: 15px; }.right-rail { grid-template-columns: 1fr; }.tip-box { grid-column: auto; }.site-footer { flex-direction: column; align-items: flex-start; }.insight-cards { grid-template-columns: 1fr; }.insight-bottom { flex-direction: column; align-items: flex-start; }.form-grid { grid-template-columns: 1fr; }.modal { padding: 20px; } }
+
+
+/* Readability pass: preserve Signal's existing palette and hierarchy while improving legibility. */
+:root {
+  --text-readable: #353449;
+  --text-secondary-readable: #626276;
+  --text-muted-readable: #747184;
+  --accent-readable: #6650bd;
+}
+
+/* Navigation and shared supporting text */
+.workspace-label { color: #6b667d; font-size: 11px; }
+.nav-item { color: #605e70; font-size: 13px; }
+.sidebar-note p, .profile-menu-heading span, .sidebar-profile small { color: var(--text-secondary-readable); font-size: 12px; }
+.concept-pill { font-size: 10px; color: var(--accent-readable); }
+.profile-menu-heading strong, .profile-menu a, .profile-menu button, .sidebar-profile strong { font-size: 12px; }
+.breadcrumb, .breadcrumb-divider, .demo-indicator { color: var(--text-secondary-readable); font-size: 12px; }
+.eyebrow { color: var(--accent-readable); font-size: 11px; }
+.page-intro p { color: var(--text-secondary-readable); font-size: 14px; line-height: 1.7; }
+.button { font-size: 13px; }
+
+/* Overview metrics and feedback inbox */
+.metric-label { color: var(--text-secondary-readable); font-size: 13px; }
+.metric-hint { color: var(--text-muted-readable); font-size: 12px; line-height: 1.55; }
+.section-heading p, .rail-heading p { color: var(--text-secondary-readable); font-size: 12px; }
+.count-chip { font-size: 12px; }
+.segmented button { color: var(--text-secondary-readable); font-size: 12px; }
+.search-wrap input { font-size: 13px; }
+.search-wrap input::placeholder { color: #747184; }
+.toolbar-dropdown-value { color: var(--text-secondary-readable); font-size: 12px; }
+.toolbar-dropdown-menu button, .status-menu button { font-size: 12px; }
+.active-insight-filter, .active-insight-filter button { font-size: 12px; }
+
+.feedback-item { padding: 22px 23px; row-gap: 12px; }
+.feedback-heading h3 { color: var(--text-readable); font-size: 14px; line-height: 1.55; }
+.feedback-body p { color: var(--text-secondary-readable); font-size: 13px; line-height: 1.6; margin: 8px 0 13px; }
+.feedback-meta { color: var(--text-muted-readable); font-size: 11px; line-height: 1.6; gap: 7px; }
+.meta-dot { color: #898498; }
+.priority-tag, .category-tag, .recent-tag { font-size: 11px; line-height: 1.25; }
+.priority-high { color: #a34935; }
+.priority-medium { color: #69571e; }
+.priority-low { color: #616e81; }
+.category-tag.rose { color: #a64553; }
+.category-tag.violet { color: #6f4bb8; }
+.category-tag.sky { color: #275e91; }
+.status-select { font-size: 11px; padding: 8px 9px; color: #626378; }
+.status-in-progress { color: #5d4bb6; }
+.status-done { color: #276b50; }
+.vote-button { font-size: 12px; padding: 8px 10px; color: #676579; }
+.panel-footer, .panel-footer button { font-size: 12px; color: var(--text-secondary-readable); }
+.panel-footer button { color: var(--accent-readable); }
+.empty-state strong { font-size: 15px; }
+.empty-state p, .empty-state button { font-size: 13px; }
+.empty-state p { color: var(--text-secondary-readable); }
+
+/* Insights, supporting cards and footer */
+.rail-heading h3 { font-size: 14px; color: var(--text-readable); }
+.bar-heading { color: var(--text-secondary-readable); font-size: 12px; }
+.text-link, .focus-card button { color: var(--accent-readable); font-size: 12px; }
+.focus-eyebrow { color: var(--accent-readable); font-size: 11px; }
+.focus-card p { color: #635a80; font-size: 13px; line-height: 1.7; }
+.focus-disclaimer { color: #73688e; font-size: 11px; line-height: 1.5; }
+.tip-box { color: #706383; }
+.tip-box p { color: var(--text-secondary-readable); font-size: 12px; }
+.tip-box strong { color: #514a6d; }
+.site-footer { color: var(--text-muted-readable); font-size: 11px; }
+.insights-lead { color: var(--text-secondary-readable); font-size: 14px; }
+.insight-summary > span:first-child { color: var(--text-secondary-readable); font-size: 13px; }
+.insight-summary > small { color: var(--text-muted-readable); font-size: 12px; }
+.insights-panel-title p { color: var(--text-secondary-readable); font-size: 12px; }
+.insight-bar-title, .progress-row { color: var(--text-secondary-readable); font-size: 13px; }
+.insight-bar-title strong { font-size: 12px; }
+.eyebrow.small { font-size: 11px; }
+.insight-bottom p { color: #615777; font-size: 13px; }
+.insight-info { color: var(--text-secondary-readable); font-size: 12px; line-height: 1.55; }
+
+/* Add-feedback form */
+.modal-subtitle { color: var(--text-secondary-readable); font-size: 13px; }
+.form-field > span { font-size: 12px; }
+.form-field input, .form-field textarea, .form-field select { font-size: 13px; }
+.form-field input::placeholder, .form-field textarea::placeholder { color: var(--text-muted-readable); }
+
+/* Keep the improved type legible on small screens rather than shrinking it back to 9-10px. */
+@media (max-width: 500px) {
+  .section-heading p { font-size: 12px; }
+  .segmented button { font-size: 12px; }
+  .feedback-item { padding: 18px 15px; }
+  .feedback-heading h3 { font-size: 13px; }
+  .feedback-body p { font-size: 12px; }
+  .feedback-meta { font-size: 11px; }
+  .metric-hint { font-size: 11px; }
+  .mobile-cta { font-size: 12px; }
+}
