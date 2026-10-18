@@ -40,6 +40,7 @@ const starterFeedback: Feedback[] = [
 ]
 
 const STORAGE_KEY = 'signal-feedback-prototype-v1'
+const VOTED_STORAGE_KEY = 'signal-feedback-voted-v1'
 const priorityOrder: Record<Priority, number> = { High: 3, Medium: 2, Low: 1 }
 const categoryColors: Record<Category, string> = { Bug: 'rose', 'Feature request': 'violet', Improvement: 'sky' }
 
@@ -51,6 +52,17 @@ function readSavedFeedback(): Feedback[] {
     if (Array.isArray(parsed)) return parsed as Feedback[]
   } catch { /* fall back to sample items */ }
   return starterFeedback
+}
+
+function readSavedVotes(): string[] {
+  try {
+    const raw = window.localStorage.getItem(VOTED_STORAGE_KEY)
+    if (!raw) return []
+    const parsed: unknown = JSON.parse(raw)
+    return Array.isArray(parsed) ? parsed.filter((id): id is string => typeof id === 'string') : []
+  } catch {
+    return []
+  }
 }
 
 function labelForDate(date: string): string {
@@ -67,7 +79,7 @@ function App() {
   const [showModal, setShowModal] = useState(false)
   const [showMobileNav, setShowMobileNav] = useState(false)
   const [toast, setToast] = useState('')
-  const [voted, setVoted] = useState<string[]>([])
+  const [voted, setVoted] = useState<string[]>(readSavedVotes)
   const [recentlyAddedId, setRecentlyAddedId] = useState<string | null>(null)
   const [profileOpen, setProfileOpen] = useState(false)
   const profileRef = useRef<HTMLDivElement>(null)
@@ -75,6 +87,10 @@ function App() {
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(feedback))
   }, [feedback])
+
+  useEffect(() => {
+    window.localStorage.setItem(VOTED_STORAGE_KEY, JSON.stringify(voted))
+  }, [voted])
 
   useEffect(() => {
     if (!toast) return
@@ -139,11 +155,13 @@ function App() {
     setToast(`Status updated to ${status.toLowerCase()}`)
   }
 
-  function addVote(id: string) {
-    if (voted.includes(id)) return
-    setFeedback(items => items.map(item => item.id === id ? { ...item, votes: item.votes + 1 } : item))
-    setVoted(ids => [...ids, id])
-    setToast('Your vote was added')
+  function toggleVote(id: string) {
+    const wasVoted = voted.includes(id)
+    setFeedback(items => items.map(item => item.id === id
+      ? { ...item, votes: Math.max(0, item.votes + (wasVoted ? -1 : 1)) }
+      : item))
+    setVoted(ids => wasVoted ? ids.filter(voteId => voteId !== id) : [...ids, id])
+    setToast(wasVoted ? 'Vote removed' : 'Your vote was added')
   }
 
   function addFeedback(item: NewFeedback) {
@@ -267,7 +285,7 @@ function App() {
 
                 <div className="feedback-list">
                   {filteredFeedback.length ? filteredFeedback.map(item => (
-                    <FeedbackCard key={item.id} item={item} voted={voted.includes(item.id)} recentlyAdded={recentlyAddedId === item.id} onVote={() => addVote(item.id)} onStatusChange={status => updateStatus(item.id, status)}/>
+                    <FeedbackCard key={item.id} item={item} voted={voted.includes(item.id)} recentlyAdded={recentlyAddedId === item.id} onVote={() => toggleVote(item.id)} onStatusChange={status => updateStatus(item.id, status)}/>
                   )) : <div className="empty-state"><Search size={26}/><strong>Nothing matches that search</strong><p>Try a different category or clear your filters.</p><button onClick={() => { setQuery(''); setCategoryFilter('All categories'); setFilterMode('All feedback') }}>Clear filters</button></div>}
                 </div>
                 <div className="panel-footer"><span>Showing {filteredFeedback.length} of {feedback.length} feedback items</span><button onClick={resetDemo}>Reset sample data <ArrowRight size={14}/></button></div>
@@ -355,11 +373,44 @@ function MetricCard({ icon, color, label, value, hint }: { icon: React.ReactNode
 }
 
 function FeedbackCard({ item, voted, recentlyAdded, onVote, onStatusChange }: { item: Feedback; voted: boolean; recentlyAdded: boolean; onVote: () => void; onStatusChange: (status: Status) => void }) {
+  const [statusOpen, setStatusOpen] = useState(false)
+  const statusRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!statusOpen) return
+    function closeOnOutsideClick(event: PointerEvent) {
+      if (!statusRef.current?.contains(event.target as Node)) setStatusOpen(false)
+    }
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setStatusOpen(false)
+    }
+    document.addEventListener('pointerdown', closeOnOutsideClick)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [statusOpen])
+
   return <article className={`feedback-item ${recentlyAdded ? 'just-added' : ''}`}>
     <div className={`feedback-category-icon ${categoryColors[item.category]}`}>{item.category === 'Bug' ? <Zap size={19}/> : item.category === 'Improvement' ? <Sparkles size={19}/> : <MessageCircle size={19}/>}</div>
     <div className="feedback-body"><div className="feedback-heading"><h3>{item.title}</h3>{recentlyAdded && <span className="recent-tag">Just added</span>}<span className={`priority-tag priority-${item.priority.toLowerCase()}`}>{item.priority} priority</span></div>
       <p>{item.description}</p><div className="feedback-meta"><span className={`category-tag ${categoryColors[item.category]}`}>{item.category}</span><span className="meta-dot">·</span><span>{item.customer}</span><span className="meta-dot">·</span><span>{labelForDate(item.createdAt)}</span></div></div>
-    <div className="feedback-actions"><label className={`status-select status-${item.status.toLowerCase().replace(' ', '-')}`}><span className="status-dot"/><select aria-label={`Status for ${item.title}`} value={item.status} onChange={e => onStatusChange(e.target.value as Status)}><option>New</option><option>In progress</option><option>Done</option></select><ChevronDown size={12}/></label><button className={`vote-button ${voted ? 'voted' : ''}`} onClick={onVote} disabled={voted} aria-label={`Vote for ${item.title}`} title={voted ? 'You voted' : 'Vote for this feedback'}><ThumbsUp size={14}/>{item.votes}</button></div>
+    <div className="feedback-actions">
+      <div className="status-control" ref={statusRef}>
+        <button type="button" className={`status-select status-${item.status.toLowerCase().replace(' ', '-')}`} aria-label={`Change status for ${item.title}, currently ${item.status}`} aria-haspopup="menu" aria-expanded={statusOpen} onClick={() => setStatusOpen(open => !open)}>
+          <span className="status-dot"/><span>{item.status}</span><ChevronDown size={12} className={statusOpen ? 'dropdown-chevron-up' : ''}/>
+        </button>
+        {statusOpen && <div className="status-menu" role="menu" aria-label={`Status for ${item.title}`}>
+          {(['New', 'In progress', 'Done'] as Status[]).map(status => <button key={status} type="button" role="menuitemradio" aria-checked={status === item.status} className={status === item.status ? 'chosen' : ''} onClick={() => { onStatusChange(status); setStatusOpen(false) }}>
+            <span className={`status-dot dot-${status.toLowerCase().replace(' ', '-')}`}/><span>{status}</span>{status === item.status && <Check size={13}/>}
+          </button>)}
+        </div>}
+      </div>
+      <button type="button" className={`vote-button ${voted ? 'voted' : ''}`} onClick={onVote} aria-pressed={voted} aria-label={voted ? `Remove your vote for ${item.title}` : `Vote for ${item.title}`} title={voted ? 'Remove your vote' : 'Vote for this feedback'}>
+        <ThumbsUp size={14}/><span>{item.votes}</span>
+      </button>
+    </div>
   </article>
 }
 
