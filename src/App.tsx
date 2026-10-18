@@ -1,9 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Activity, ArrowDownRight, ArrowRight, ArrowUpRight, BarChart3, Check,
   CheckCircle2, ChevronDown, CircleHelp, Clock3, Filter, Inbox, LayoutDashboard,
   Lightbulb, Menu, MessageCircle, Plus, Search, Sparkles, ThumbsUp, TrendingUp,
-  ArrowDownUp,
+  ArrowDownUp, ExternalLink, RotateCcw,
   X, Zap,
 } from 'lucide-react'
 
@@ -69,6 +69,8 @@ function App() {
   const [toast, setToast] = useState('')
   const [voted, setVoted] = useState<string[]>([])
   const [recentlyAddedId, setRecentlyAddedId] = useState<string | null>(null)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const profileRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(feedback))
@@ -85,6 +87,22 @@ function App() {
     const timer = window.setTimeout(() => setRecentlyAddedId(null), 5000)
     return () => window.clearTimeout(timer)
   }, [recentlyAddedId])
+
+  useEffect(() => {
+    if (!profileOpen) return
+    function handlePointerDown(event: PointerEvent) {
+      if (!profileRef.current?.contains(event.target as Node)) setProfileOpen(false)
+    }
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') setProfileOpen(false)
+    }
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [profileOpen])
 
   const counts = useMemo(() => {
     const total = feedback.length
@@ -179,7 +197,25 @@ function App() {
           <p>A small concept exploring better product decisions.</p>
           <span className="concept-pill">CONCEPT PROJECT</span>
         </div>
-        <div className="sidebar-profile"><span className="avatar">MG</span><span><strong>Marjan Ghamkhar</strong><small>Product designer</small></span><ChevronDown size={16}/></div>
+        <div className="profile-control" ref={profileRef}>
+          <button type="button" className="sidebar-profile" aria-label="Open project profile menu" aria-expanded={profileOpen} aria-controls="profile-menu" onClick={() => setProfileOpen(isOpen => !isOpen)}>
+            <span className="avatar">MG</span>
+            <span><strong>Marjan Ghamkhar</strong><small>Product designer</small></span>
+            <ChevronDown size={16} className={profileOpen ? 'profile-chevron-open' : ''}/>
+          </button>
+          {profileOpen && (
+            <div id="profile-menu" className="profile-menu" role="menu" aria-label="Project profile">
+              <div className="profile-menu-heading"><strong>Signal demo workspace</strong><span>No account is required. Your changes stay in this browser.</span></div>
+              <a role="menuitem" href="https://github.com/marjanghamkhar/signal-feedback-prioritizer" target="_blank" rel="noopener noreferrer" onClick={() => setProfileOpen(false)}>
+                <ExternalLink size={16}/> View source on GitHub
+              </a>
+              <button type="button" role="menuitem" onClick={() => {
+                setProfileOpen(false)
+                if (window.confirm('Reset Signal to its original sample feedback? This will remove any feedback you added in this browser.')) resetDemo()
+              }}><RotateCcw size={16}/> Reset demo data</button>
+            </div>
+          )}
+        </div>
       </aside>
 
       {showMobileNav && <button className="sidebar-backdrop" aria-label="Close menu" onClick={() => setShowMobileNav(false)}/>}
